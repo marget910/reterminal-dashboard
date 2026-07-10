@@ -265,7 +265,7 @@
     }
 
     async function fetchCtbEta(route, stopId) {
-      const url = `https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/${stopId}/${route}`;
+      const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
       const res = await fetch(url);
       const json = await res.json();
       const rows = (json.data || [])
