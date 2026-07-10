@@ -277,24 +277,30 @@
     }
 
 
-    async function fetchWeather() {
-      try {
-        const res = await fetch('https://www.hko.gov.hk/textonly/v2/forecast/englishwx2.htm');
-        const text = await res.text();
-        const tempMatch = text.match(/Air Temperature :\s*(\d+) degrees Celsius/i);
-        const humMatch = text.match(/Relative Humidity :\s*(\d+) per cent/i);
-        const uvMatch = text.match(/UV Index recorded at King's Park :\s*([\d.]+)/i);
-        const descMatch = text.match(/Weather Cartoon :\s*(.+)/i);
-        document.getElementById('tempText').textContent = tempMatch ? tempMatch[1] : '--';
-        document.getElementById('humidityText').textContent = humMatch ? humMatch[1] : '--';
-        document.getElementById('uvText').textContent = uvMatch ? uvMatch[1] : '--';
-        document.getElementById('weatherDesc').textContent = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : 'Hong Kong Observatory';
-        document.getElementById('weatherIcon').textContent = '☔';
-        document.getElementById('windText').textContent = '--';
-      } catch (e) {
-        document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
-      }
-    }
+async function fetchWeather() {
+  try {
+    const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
+    const json = await res.json();
+
+    const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
+    const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
+    const uv = json.uvindex?.data?.[0];
+
+    document.getElementById('tempText').textContent = temp ? temp.value : '--';
+    document.getElementById('humidityText').textContent = hum ? hum.value : '--';
+    document.getElementById('uvText').textContent = uv ? uv.value : '--';
+    document.getElementById('weatherDesc').textContent = 'Hong Kong Observatory';
+    document.getElementById('weatherIcon').textContent = '☁';
+    document.getElementById('windText').textContent = '--';
+  } catch (e) {
+    document.getElementById('tempText').textContent = '--';
+    document.getElementById('humidityText').textContent = '--';
+    document.getElementById('uvText').textContent = '--';
+    document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
+    document.getElementById('weatherIcon').textContent = '☁';
+    document.getElementById('windText').textContent = '--';
+  }
+}
 
 
     async function connectCalendar() {
