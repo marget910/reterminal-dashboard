@@ -206,13 +206,16 @@
       document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-    function minsUntil(iso) {
-      const target = new Date(iso);
-      const diff = Math.round((target.getTime() - Date.now()) / 60000);
-      if (Number.isNaN(diff) || diff < 0) return null;
-      if (diff <= 1) return '即將到站';
-      return `${diff} 分鐘`;
-    }
+    function etaTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('zh-HK', {
+    timeZone: 'Asia/Hong_Kong',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(d);
+}
 
     function setEta(route, list) {
       for (let i = 1; i <= 3; i++) {
@@ -230,7 +233,7 @@
       return (json.data || [])
         .filter(x => x.route === route && x.eta)
         .slice(0, 3)
-        .map(x => minsUntil(x.eta))
+        .map(x => etaTime(x.eta))
         .filter(Boolean);
     }
 
@@ -241,7 +244,7 @@
       return (json.data || [])
         .filter(x => x.route === route && x.eta)
         .slice(0, 3)
-        .map(x => minsUntil(x.eta))
+        .map(x => etaTime(x.eta))
         .filter(Boolean);
     }
 
