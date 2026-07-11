@@ -3,118 +3,200 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>status board</title>
+  <title>reTerminal bus dashboard debug</title>
   <style>
-    body {
-      margin: 0;
-      padding: 16px;
-      background: #efefef;
-      font-family: Arial, "Noto Sans TC", sans-serif;
-      color: #222;
-    }
-    .wrap {
-      max-width: 900px;
-      margin: 0 auto;
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 16px;
-    }
-    .row {
-      margin: 8px 0;
-      font-size: 20px;
-      line-height: 1.4;
-    }
-    .label {
-      font-weight: 700;
-    }
-    .ok {
-      color: #0a7a0a;
-    }
-    .err {
-      color: #b00020;
-    }
+    :root { --bg:#f4f4f4; --fg:#111; --line:#111; --muted:#666; --soft:#d8d8d8; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#ddd; font-family:Arial,"Noto Sans TC",sans-serif; display:grid; place-items:center; min-height:100vh; color:var(--fg); }
+    .frame { width:800px; height:380px; background:var(--bg); border:8px solid #fff; box-shadow:0 8px 30px rgba(0,0,0,.15); padding:18px; position:relative; }
+    .dash { display:grid; grid-template-columns:1.65fr .95fr; gap:18px; height:100%; }
+    .bus-panel { display:grid; grid-template-rows:repeat(7,1fr); border-top:2px solid var(--line); border-bottom:2px solid var(--line); }
+    .row { display:grid; grid-template-columns:94px 1fr 1fr 1fr; align-items:center; min-height:0; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:0; }
+    .route { background:#111; color:#fff; font-weight:700; font-size:24px; height:100%; display:flex; align-items:center; justify-content:center; }
+    .eta { height:100%; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; border-left:1px solid var(--line); overflow:hidden; white-space:nowrap; }
+    .eta.na { color:var(--muted); }
+    .side { display:grid; grid-template-rows:auto auto 1fr auto; gap:10px; }
+    .date-box { text-align:center; padding-top:2px; }
+    .date { font-size:72px; line-height:.95; font-weight:800; letter-spacing:1px; }
+    .weekday { display:inline-block; background:#111; color:#fff; padding:6px 24px; font-size:28px; line-height:1; margin-top:6px; font-weight:700; }
+    .clock { text-align:center; font-size:52px; font-weight:700; line-height:1; padding:6px 0 10px; border-bottom:2px solid var(--line); }
+    .card { border:1.5px solid var(--soft); padding:10px 12px; display:grid; gap:6px; align-content:start; min-height:0; }
+    .weather-main { display:flex; align-items:center; gap:10px; }
+    .weather-icon { font-size:28px; width:34px; text-align:center; }
+    .temp { font-size:42px; font-weight:800; line-height:1; }
+    .weather-sub { font-size:12px; color:var(--muted); }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; font-size:18px; text-align:center; margin-top:4px; }
+    .stats span { display:block; font-size:12px; color:var(--muted); margin-bottom:2px; }
+    .statusbar { position:absolute; left:18px; right:18px; bottom:6px; display:flex; justify-content:space-between; font-size:11px; color:#444; border-top:1px dotted #bbb; padding-top:4px; }
+    .ok { color:#0a7a0a; }
+    .err { color:#b00020; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="row"><span class="label">Clock:</span> <span id="clock">--:--:--</span></div>
-    <div class="row"><span class="label">Weather:</span> <span id="weather">loading...</span></div>
-    <div class="row"><span class="label">Bus:</span> <span id="bus">loading...</span></div>
+  <div class="frame">
+    <div class="dash">
+      <section class="bus-panel" aria-label="巴士到站時間">
+        <div class="row"><div class="route">27</div><div class="eta" id="eta-27-1">waiting...</div><div class="eta" id="eta-27-2">--</div><div class="eta" id="eta-27-3">--</div></div>
+        <div class="row"><div class="route">1A</div><div class="eta" id="eta-1A-1">waiting...</div><div class="eta" id="eta-1A-2">--</div><div class="eta" id="eta-1A-3">--</div></div>
+        <div class="row"><div class="route">42</div><div class="eta" id="eta-42-1">waiting...</div><div class="eta" id="eta-42-2">--</div><div class="eta" id="eta-42-3">--</div></div>
+        <div class="row"><div class="route">213D</div><div class="eta" id="eta-213D-1">waiting...</div><div class="eta" id="eta-213D-2">--</div><div class="eta" id="eta-213D-3">--</div></div>
+        <div class="row"><div class="route">6D</div><div class="eta" id="eta-6D-1">waiting...</div><div class="eta" id="eta-6D-2">--</div><div class="eta" id="eta-6D-3">--</div></div>
+        <div class="row"><div class="route">296C</div><div class="eta" id="eta-296C-1">waiting...</div><div class="eta" id="eta-296C-2">--</div><div class="eta" id="eta-296C-3">--</div></div>
+        <div class="row"><div class="route">793</div><div class="eta" id="eta-793-1">waiting...</div><div class="eta" id="eta-793-2">--</div><div class="eta" id="eta-793-3">--</div></div>
+      </section>
+      <aside class="side">
+        <div class="date-box">
+          <div class="date" id="dateText">--/--</div>
+          <div class="weekday" id="weekdayText">星期-</div>
+        </div>
+        <div class="clock" id="clockText">--:--:--</div>
+        <section class="card" aria-label="天氣資訊">
+          <div class="weather-main">
+            <div class="weather-icon" id="weatherIcon">☁</div>
+            <div>
+              <div class="temp" id="tempText">--</div>
+              <div class="weather-sub" id="weatherDesc">waiting...</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div><span>Humidity</span><strong id="humidityText">--</strong></div>
+            <div><span>Wind</span><strong id="windText">--</strong></div>
+            <div><span>UV</span><strong id="uvText">--</strong></div>
+          </div>
+        </section>
+        <div class="card" style="padding:8px 10px">
+          <div><strong>Debug</strong></div>
+          <div id="statusBus">Bus: waiting...</div>
+          <div id="statusWeather">Weather: waiting...</div>
+          <div id="statusClock">Clock: waiting...</div>
+        </div>
+      </aside>
+    </div>
+    <div class="statusbar">
+      <div id="statusMsg">ready</div>
+      <div id="statusTime"></div>
+    </div>
   </div>
 
   <script>
-    const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
+    const BUS_CONFIG = [
+      { route: '27', company: 'kmb', stop: 'D625B0997C3DBCFE' },
+      { route: '1A', company: 'kmb', stop: 'D625B0997C3DBCFE' },
+      { route: '42', company: 'kmb', stop: 'D625B0997C3DBCFE' },
+      { route: '213D', company: 'kmb', stop: 'D625B0997C3DBCFE' },
+      { route: '6D', company: 'kmb', stop: '442D6A78E1015EAE' },
+      { route: '296C', company: 'kmb', stop: 'A1C65E46464147A0' },
+      { route: '793', company: 'ctb', stop: '1829' }
+    ];
+    const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
     const pad = n => String(n).padStart(2, '0');
-    const set = (id, txt, cls = '') => {
-      const el = document.getElementById(id);
-      el.textContent = txt;
-      el.className = cls;
-    };
+    const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
+    const statusMsg = document.getElementById('statusMsg');
+    const statusTime = document.getElementById('statusTime');
+    const statusBus = document.getElementById('statusBus');
+    const statusWeather = document.getElementById('statusWeather');
+    const statusClock = document.getElementById('statusClock');
 
-    function tick() {
-      const d = hkNow();
-      set('clock', `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+    function setStatus(msg, cls='') { statusMsg.className = cls; statusMsg.textContent = msg; statusTime.textContent = new Date().toLocaleTimeString(); }
+    function renderTime() {
+      try {
+        const d = hkNow();
+        document.getElementById('dateText').textContent = `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
+        document.getElementById('weekdayText').textContent = weekdays[d.getDay()];
+        document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        statusClock.textContent = `Clock: OK (${document.getElementById('clockText').textContent})`;
+      } catch (e) { statusClock.textContent = `Clock: ERROR ${e.message}`; }
     }
 
-    async function fetchWithTimeout(url, timeout = 8000) {
+    function etaTime(iso) {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return null;
+      return new Intl.DateTimeFormat('zh-HK', { timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+    }
+
+    function setEta(route, list) {
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById(`eta-${route}-${i}`);
+        const value = list[i - 1] || 'N/A';
+        el.textContent = value;
+        el.classList.toggle('na', value === 'N/A');
+      }
+    }
+
+    async function fetchWithTimeout(url, timeout=8000) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
+      try { const res = await fetch(url, { signal: controller.signal, cache: 'no-store' }); clearTimeout(timer); return res; }
+      catch (e) { clearTimeout(timer); throw e; }
+    }
+
+    async function fetchKmbEta(route, stop) {
+      const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) throw new Error(`KMB HTTP ${res.status}`);
+      const json = await res.json();
+      return (json.data || []).filter(x => x.route === route && x.eta).slice(0, 3).map(x => etaTime(x.eta)).filter(Boolean);
+    }
+
+    async function fetchCtbEta(route, stopId) {
+      const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) throw new Error(`CTB HTTP ${res.status}`);
+      const json = await res.json();
+      return (json.data || []).filter(x => x.route === route && x.eta).slice(0, 3).map(x => etaTime(x.eta)).filter(Boolean);
+    }
+
+    async function fetchWeather() {
       try {
-        const res = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-        clearTimeout(timer);
-        return res;
+        const url = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en';
+        const res = await fetchWithTimeout(url, 8000);
+        if (!res.ok) throw new Error(`Weather HTTP ${res.status}`);
+        const json = await res.json();
+        const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
+        const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
+        const uv = json.uvindex?.data?.[0];
+        document.getElementById('tempText').textContent = temp ? temp.value : '--';
+        document.getElementById('humidityText').textContent = hum ? hum.value : '--';
+        document.getElementById('uvText').textContent = uv ? uv.value : '--';
+        document.getElementById('weatherDesc').textContent = 'Hong Kong Observatory';
+        document.getElementById('weatherIcon').textContent = '☁';
+        document.getElementById('windText').textContent = '--';
+        statusWeather.textContent = `Weather: OK (${temp ? temp.value : '--'}°C)`;
       } catch (e) {
-        clearTimeout(timer);
-        throw e;
+        document.getElementById('tempText').textContent = '--';
+        document.getElementById('humidityText').textContent = '--';
+        document.getElementById('uvText').textContent = '--';
+        document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
+        document.getElementById('weatherIcon').textContent = '☁';
+        document.getElementById('windText').textContent = '--';
+        statusWeather.textContent = `Weather: ERROR ${e.message}`;
       }
     }
 
-    async function loadWeather() {
-      try {
-        set('weather', 'loading...', '');
-        const r = await fetchWithTimeout('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', 8000);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = await r.json();
-        const t = j?.temperature?.data?.[0]?.value;
-        const h = j?.humidity?.data?.[0]?.value;
-        const u = j?.uvindex?.data?.[0]?.value;
-        const parts = [];
-        if (t !== undefined) parts.push(`Temp ${t}°C`);
-        if (h !== undefined) parts.push(`Hum ${h}%`);
-        if (u !== undefined) parts.push(`UV ${u}`);
-        set('weather', parts.length ? parts.join(' · ') : 'no data', 'ok');
-      } catch (e) {
-        set('weather', e.name === 'AbortError' ? 'ERROR timeout' : `ERROR ${e.message}`, 'err');
-      }
-    }
-
-    async function loadBus() {
-      try {
-        set('bus', 'loading...', '');
-        const url = 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1';
-        const r = await fetchWithTimeout(url, 8000);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = await r.json();
-        const first = j?.data?.[0];
-        if (!first) {
-          set('bus', 'no data', 'err');
-          return;
+    async function refreshBusEta() {
+      const results = [];
+      for (const item of BUS_CONFIG) {
+        try {
+          const rows = item.company === 'kmb' ? await fetchKmbEta(item.route, item.stop) : await fetchCtbEta(item.route, item.stop);
+          setEta(item.route, rows.length ? rows : ['N/A', 'N/A', 'N/A']);
+          results.push(`${item.route}:OK`);
+        } catch (err) {
+          setEta(item.route, ['N/A', 'N/A', 'N/A']);
+          results.push(`${item.route}:ERR`);
+          console.error(item.route, err);
         }
-        const time = first.eta ? first.eta.replace('T', ' ').slice(11, 16) : 'N/A';
-        const dest = first.dest_tc || first.dest_en || 'N/A';
-        const seq = first.seq ?? '';
-        set('bus', `${time} · ${dest} ${seq !== '' ? `· #${seq}` : ''}`, 'ok');
-      } catch (e) {
-        set('bus', e.name === 'AbortError' ? 'ERROR timeout' : `ERROR ${e.message}`, 'err');
       }
+      statusBus.textContent = `Bus: ${results.join(' | ')}`;
     }
 
-    tick();
-    loadWeather();
-    loadBus();
-    setInterval(tick, 1000);
-    setInterval(loadWeather, 300000);
-    setInterval(loadBus, 300000);
+    renderTime();
+    fetchWeather();
+    refreshBusEta();
+    setInterval(renderTime, 1000);
+    setInterval(fetchWeather, 30 * 60 * 1000);
+    setInterval(refreshBusEta, 60000);
+    setStatus('ready', 'ok');
   </script>
 </body>
 </html>
