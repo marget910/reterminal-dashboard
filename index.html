@@ -56,9 +56,23 @@
       set('clock', `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     }
 
+    async function fetchWithTimeout(url, timeout = 8000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      try {
+        const res = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        clearTimeout(timer);
+        return res;
+      } catch (e) {
+        clearTimeout(timer);
+        throw e;
+      }
+    }
+
     async function loadWeather() {
       try {
-        const r = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', { cache: 'no-store' });
+        set('weather', 'loading...', '');
+        const r = await fetchWithTimeout('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', 8000);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const j = await r.json();
         const t = j?.temperature?.data?.[0]?.value;
@@ -70,14 +84,15 @@
         if (u !== undefined) parts.push(`UV ${u}`);
         set('weather', parts.length ? parts.join(' · ') : 'no data', 'ok');
       } catch (e) {
-        set('weather', `ERROR ${e.message}`, 'err');
+        set('weather', e.name === 'AbortError' ? 'ERROR timeout' : `ERROR ${e.message}`, 'err');
       }
     }
 
     async function loadBus() {
       try {
+        set('bus', 'loading...', '');
         const url = 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1';
-        const r = await fetch(url, { cache: 'no-store' });
+        const r = await fetchWithTimeout(url, 8000);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const j = await r.json();
         const first = j?.data?.[0];
@@ -90,7 +105,7 @@
         const seq = first.seq ?? '';
         set('bus', `${time} · ${dest} ${seq !== '' ? `· #${seq}` : ''}`, 'ok');
       } catch (e) {
-        set('bus', `ERROR ${e.message}`, 'err');
+        set('bus', e.name === 'AbortError' ? 'ERROR timeout' : `ERROR ${e.message}`, 'err');
       }
     }
 
