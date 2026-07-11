@@ -5,14 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>reTerminal bus dashboard</title>
   <style>
-    :root {
-      --bg: #f4f4f4;
-      --fg: #111;
-      --line: #111;
-      --muted: #666;
-      --white: #fff;
-      --soft: #d8d8d8;
-    }
+    :root { --bg:#f4f4f4; --fg:#111; --line:#111; --muted:#666; --white:#fff; --soft:#d8d8d8; }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -206,89 +199,28 @@
       document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-function etaTime(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat('zh-HK', {
-    timeZone: 'Asia/Hong_Kong',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(d);
-}
+    function etaTime(iso) {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return null;
+      return new Intl.DateTimeFormat('zh-HK', {
+        timeZone: 'Asia/Hong_Kong',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(d);
+    }
 
-function setEta(route, list) {
-  for (let i = 1; i <= 3; i++) {
-    const el = document.getElementById(`eta-${route}-${i}`);
-    const value = list[i - 1] || 'N/A';
-    el.textContent = value;
-    el.classList.toggle('na', value === 'N/A');
-  }
-}
-
-async function fetchKmbEta(route, stop) {
-  const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return (json.data || [])
-    .filter(x => x.route === route && x.eta)
-    .slice(0, 3)
-    .map(x => etaTime(x.eta))
-    .filter(Boolean);
-}
-
-async function fetchCtbEta(route, stopId) {
-  const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return (json.data || [])
-    .filter(x => x.route === route && x.eta)
-    .slice(0, 3)
-    .map(x => etaTime(x.eta))
-    .filter(Boolean);
-}
-
-    async function fetchWeather() {
-      try {
-        const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
-        const json = await res.json();
-        const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
-        const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
-        const uv = json.uvindex?.data?.[0];
-        document.getElementById('tempText').textContent = temp ? temp.value : '--';
-        document.getElementById('humidityText').textContent = hum ? hum.value : '--';
-        document.getElementById('uvText').textContent = uv ? uv.value : '--';
-        document.getElementById('weatherDesc').textContent = 'Hong Kong Observatory';
-        document.getElementById('weatherIcon').textContent = '☁';
-        document.getElementById('windText').textContent = '--';
-      } catch (e) {
-        document.getElementById('tempText').textContent = '--';
-        document.getElementById('humidityText').textContent = '--';
-        document.getElementById('uvText').textContent = '--';
-        document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
-        document.getElementById('weatherIcon').textContent = '☁';
-        document.getElementById('windText').textContent = '--';
+    function setEta(route, list) {
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById(`eta-${route}-${i}`);
+        const value = list[i - 1] || 'N/A';
+        el.textContent = value;
+        el.classList.toggle('na', value === 'N/A');
       }
     }
 
-    async function refreshBusEta() {
-      for (const item of BUS_CONFIG) {
-        try {
-          const rows = item.company === 'kmb' ? await fetchKmbEta(item.route, item.stop) : await fetchCtbEta(item.route, item.stop);
-          setEta(item.route, rows.length ? rows : ['N/A', 'N/A', 'N/A']);
-        } catch (err) {
-          setEta(item.route, ['N/A', 'N/A', 'N/A']);
-          console.error(item.route, err);
-        }
-      }
-    }
-
-    renderTime();
-    fetchWeather();
-    refreshBusEta();
-    setInterval(renderTime, 1000);
-    setInterval(fetchWeather, 30 * 60 * 1000);
-    setInterval(refreshBusEta, 60000);
-  </script>
-</body>
-</html>
+    async function fetchKmbEta(route, stop) {
+      const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
+      const res = await fetch(url);
+      const json = await res.json();
+      return 
