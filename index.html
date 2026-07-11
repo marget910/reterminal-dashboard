@@ -3,68 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fetch test</title>
+  <title>debug fetch test</title>
   <style>
     body { font-family: Arial, "Noto Sans TC", sans-serif; margin: 0; padding: 16px; background: #f4f4f4; color: #111; }
-    .box { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid #ddd; padding: 16px; }
+    .box { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #ddd; padding: 16px; }
     .row { margin: 8px 0; }
-    pre { white-space: pre-wrap; word-break: break-word; background: #111; color: #0f0; padding: 12px; min-height: 180px; }
-    .ok { color: #0a7a0a; }
-    .err { color: #b00020; }
+    .label { font-weight: 700; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #111; color: #0f0; padding: 12px; min-height: 220px; }
+    .step { font-family: monospace; }
   </style>
 </head>
 <body>
   <div class="box">
-    <div class="row"><strong>Clock:</strong> <span id="clock">--:--:--</span></div>
-    <div class="row"><strong>Bus:</strong> <span id="bus">waiting...</span></div>
-    <div class="row"><strong>Weather:</strong> <span id="weather">waiting...</span></div>
-    <div class="row"><strong>Status:</strong> <span id="status">ready</span></div>
-    <pre id="log">log...</pre>
+    <div class="row"><span class="label">Clock:</span> <span id="clock">--:--:--</span></div>
+    <div class="row"><span class="label">Init:</span> <span id="init">starting...</span></div>
+    <div class="row"><span class="label">Weather:</span> <span id="weather">waiting...</span></div>
+    <div class="row"><span class="label">Bus:</span> <span id="bus">waiting...</span></div>
+    <pre id="log">log start
+</pre>
   </div>
 
   <script>
-    const log = (msg) => { document.getElementById('log').textContent += '\n' + msg; };
+    const log = (msg) => { document.getElementById('log').textContent += msg + '\n'; };
     const set = (id, v) => { document.getElementById(id).textContent = v; };
-    const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
     const pad = n => String(n).padStart(2, '0');
+    const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
 
     function tick() {
       const d = hkNow();
       set('clock', `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     }
 
-    async function testWeather() {
+    async function probe(name, url, targetId) {
+      log(`[${name}] start`);
+      set(targetId, 'fetching...');
       try {
-        const r = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
-        set('weather', `HTTP ${r.status}`);
-        const j = await r.json();
-        log('weather ok');
-        log(JSON.stringify({ temp: j.temperature?.data?.[0], humidity: j.humidity?.data?.[0], uv: j.uvindex?.data?.[0] }, null, 2));
+        log(`[${name}] before fetch`);
+        const r = await fetch(url, { cache: 'no-store' });
+        log(`[${name}] after fetch: HTTP ${r.status}`);
+        set(targetId, `HTTP ${r.status}`);
+        const text = await r.text();
+        log(`[${name}] body length: ${text.length}`);
+        try {
+          const j = JSON.parse(text);
+          log(`[${name}] json parse ok`);
+          log(`[${name}] preview: ${JSON.stringify(j).slice(0, 500)}`);
+        } catch (e) {
+          log(`[${name}] not json: ${text.slice(0, 500)}`);
+        }
       } catch (e) {
-        set('weather', `ERROR ${e.message}`);
-        log('weather error: ' + (e.stack || e.message));
+        log(`[${name}] error: ${e.name}: ${e.message}`);
+        set(targetId, `ERROR ${e.message}`);
+      }
+      log(`[${name}] end`);
+    }
+
+    async function main() {
+      try {
+        log('[main] script running');
+        set('init', 'script loaded');
+        tick();
+        setInterval(tick, 1000);
+        await probe('weather', 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', 'weather');
+        await probe('bus', 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1', 'bus');
+        set('init', 'done');
+        log('[main] all done');
+      } catch (e) {
+        log('[main] fatal: ' + e.stack);
+        set('init', 'fatal error');
       }
     }
 
-    async function testBus() {
-      try {
-        const url = 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1';
-        const r = await fetch(url);
-        set('bus', `HTTP ${r.status}`);
-        const j = await r.json();
-        log('bus ok');
-        log(JSON.stringify(j?.data?.slice?.(0,2) || j, null, 2));
-      } catch (e) {
-        set('bus', `ERROR ${e.message}`);
-        log('bus error: ' + (e.stack || e.message));
-      }
-    }
-
-    tick();
-    testWeather();
-    testBus();
-    setInterval(tick, 1000);
-    set('status', 'loaded');
+    main();
   </script>
 </body>
 </html>
