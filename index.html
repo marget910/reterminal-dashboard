@@ -206,7 +206,7 @@
       document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-    function etaTime(iso) {
+function etaTime(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return new Intl.DateTimeFormat('zh-HK', {
@@ -217,36 +217,36 @@
   }).format(d);
 }
 
-    function setEta(route, list) {
-      for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById(`eta-${route}-${i}`);
-        const value = list[i - 1] || 'N/A';
-        el.textContent = value;
-        el.classList.toggle('na', value === 'N/A');
-      }
-    }
+function setEta(route, list) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`eta-${route}-${i}`);
+    const value = list[i - 1] || 'N/A';
+    el.textContent = value;
+    el.classList.toggle('na', value === 'N/A');
+  }
+}
 
-    async function fetchKmbEta(route, stop) {
-      const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
-      const res = await fetch(url);
-      const json = await res.json();
-      return (json.data || [])
-        .filter(x => x.route === route && x.eta)
-        .slice(0, 3)
-        .map(x => etaTime(x.eta))
-        .filter(Boolean);
-    }
+async function fetchKmbEta(route, stop) {
+  const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return (json.data || [])
+    .filter(x => x.route === route && x.eta)
+    .slice(0, 3)
+    .map(x => etaTime(x.eta))
+    .filter(Boolean);
+}
 
-    async function fetchCtbEta(route, stopId) {
-      const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      return (json.data || [])
-        .filter(x => x.route === route && x.eta)
-        .slice(0, 3)
-        .map(x => etaTime(x.eta))
-        .filter(Boolean);
-    }
+async function fetchCtbEta(route, stopId) {
+  const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return (json.data || [])
+    .filter(x => x.route === route && x.eta)
+    .slice(0, 3)
+    .map(x => etaTime(x.eta))
+    .filter(Boolean);
+}
 
     async function fetchWeather() {
       try {
