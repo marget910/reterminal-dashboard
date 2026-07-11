@@ -3,78 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>debug fetch test</title>
+  <title>status board</title>
   <style>
-    body { font-family: Arial, "Noto Sans TC", sans-serif; margin: 0; padding: 16px; background: #f4f4f4; color: #111; }
-    .box { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #ddd; padding: 16px; }
-    .row { margin: 8px 0; }
-    .label { font-weight: 700; }
-    pre { white-space: pre-wrap; word-break: break-word; background: #111; color: #0f0; padding: 12px; min-height: 220px; }
-    .step { font-family: monospace; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: #efefef;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      color: #222;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 16px;
+    }
+    .row {
+      margin: 8px 0;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+    .label {
+      font-weight: 700;
+    }
+    .ok {
+      color: #0a7a0a;
+    }
+    .err {
+      color: #b00020;
+    }
   </style>
 </head>
 <body>
-  <div class="box">
+  <div class="wrap">
     <div class="row"><span class="label">Clock:</span> <span id="clock">--:--:--</span></div>
-    <div class="row"><span class="label">Init:</span> <span id="init">starting...</span></div>
-    <div class="row"><span class="label">Weather:</span> <span id="weather">waiting...</span></div>
-    <div class="row"><span class="label">Bus:</span> <span id="bus">waiting...</span></div>
-    <pre id="log">log start
-</pre>
+    <div class="row"><span class="label">Weather:</span> <span id="weather">loading...</span></div>
+    <div class="row"><span class="label">Bus:</span> <span id="bus">loading...</span></div>
   </div>
 
   <script>
-    const log = (msg) => { document.getElementById('log').textContent += msg + '\n'; };
-    const set = (id, v) => { document.getElementById(id).textContent = v; };
-    const pad = n => String(n).padStart(2, '0');
     const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
+    const pad = n => String(n).padStart(2, '0');
+    const set = (id, txt, cls = '') => {
+      const el = document.getElementById(id);
+      el.textContent = txt;
+      el.className = cls;
+    };
 
     function tick() {
       const d = hkNow();
       set('clock', `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     }
 
-    async function probe(name, url, targetId) {
-      log(`[${name}] start`);
-      set(targetId, 'fetching...');
+    async function loadWeather() {
       try {
-        log(`[${name}] before fetch`);
+        const r = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', { cache: 'no-store' });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        const t = j?.temperature?.data?.[0]?.value;
+        const h = j?.humidity?.data?.[0]?.value;
+        const u = j?.uvindex?.data?.[0]?.value;
+        const parts = [];
+        if (t !== undefined) parts.push(`Temp ${t}°C`);
+        if (h !== undefined) parts.push(`Hum ${h}%`);
+        if (u !== undefined) parts.push(`UV ${u}`);
+        set('weather', parts.length ? parts.join(' · ') : 'no data', 'ok');
+      } catch (e) {
+        set('weather', `ERROR ${e.message}`, 'err');
+      }
+    }
+
+    async function loadBus() {
+      try {
+        const url = 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1';
         const r = await fetch(url, { cache: 'no-store' });
-        log(`[${name}] after fetch: HTTP ${r.status}`);
-        set(targetId, `HTTP ${r.status}`);
-        const text = await r.text();
-        log(`[${name}] body length: ${text.length}`);
-        try {
-          const j = JSON.parse(text);
-          log(`[${name}] json parse ok`);
-          log(`[${name}] preview: ${JSON.stringify(j).slice(0, 500)}`);
-        } catch (e) {
-          log(`[${name}] not json: ${text.slice(0, 500)}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        const first = j?.data?.[0];
+        if (!first) {
+          set('bus', 'no data', 'err');
+          return;
         }
+        const time = first.eta ? first.eta.replace('T', ' ').slice(11, 16) : 'N/A';
+        const dest = first.dest_tc || first.dest_en || 'N/A';
+        const seq = first.seq ?? '';
+        set('bus', `${time} · ${dest} ${seq !== '' ? `· #${seq}` : ''}`, 'ok');
       } catch (e) {
-        log(`[${name}] error: ${e.name}: ${e.message}`);
-        set(targetId, `ERROR ${e.message}`);
-      }
-      log(`[${name}] end`);
-    }
-
-    async function main() {
-      try {
-        log('[main] script running');
-        set('init', 'script loaded');
-        tick();
-        setInterval(tick, 1000);
-        await probe('weather', 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en', 'weather');
-        await probe('bus', 'https://data.etabus.gov.hk/v1/transport/kmb/eta/D625B0997C3DBCFE/27/1', 'bus');
-        set('init', 'done');
-        log('[main] all done');
-      } catch (e) {
-        log('[main] fatal: ' + e.stack);
-        set('init', 'fatal error');
+        set('bus', `ERROR ${e.message}`, 'err');
       }
     }
 
-    main();
+    tick();
+    loadWeather();
+    loadBus();
+    setInterval(tick, 1000);
+    setInterval(loadWeather, 300000);
+    setInterval(loadBus, 300000);
   </script>
 </body>
 </html>
