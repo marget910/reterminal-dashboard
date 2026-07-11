@@ -281,7 +281,6 @@ async function fetchWeather() {
   try {
     const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
     const json = await res.json();
-
     const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
     const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
     const uv = json.uvindex?.data?.[0];
