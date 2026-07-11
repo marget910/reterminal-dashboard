@@ -76,7 +76,7 @@
     .eta.na { color: var(--muted); }
     .side {
       display: grid;
-      grid-template-rows: auto auto auto 1fr;
+      grid-template-rows: auto auto 1fr;
       gap: 12px;
     }
     .date-box {
@@ -148,26 +148,6 @@
       color: var(--muted);
       margin-bottom: 2px;
     }
-    .calendar {
-      overflow: hidden;
-    }
-    .calendar-title {
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: .6px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 6px;
-      margin-bottom: 2px;
-    }
-    .event {
-      display: grid;
-      grid-template-columns: 62px 1fr;
-      gap: 8px;
-      font-size: 15px;
-      align-items: start;
-      margin-bottom: 6px;
-    }
-    .event-time { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -182,15 +162,12 @@
         <div class="row"><div class="route">296C</div><div class="eta" id="eta-296C-1">載入中</div><div class="eta" id="eta-296C-2">--</div><div class="eta" id="eta-296C-3">--</div></div>
         <div class="row"><div class="route">793</div><div class="eta" id="eta-793-1">載入中</div><div class="eta" id="eta-793-2">--</div><div class="eta" id="eta-793-3">--</div></div>
       </section>
-
       <aside class="side">
         <div class="date-box">
-          <div class="date" id="dateText">06/23</div>
-          <div class="weekday" id="weekdayText">星期二</div>
+          <div class="date" id="dateText">--/--</div>
+          <div class="weekday" id="weekdayText">星期-</div>
         </div>
-
-        <div class="clock" id="clockText">21:37:55</div>
-
+        <div class="clock" id="clockText">--:--:--</div>
         <section class="card" aria-label="天氣資訊">
           <div class="weather-main">
             <div class="weather-icon" id="weatherIcon">☁</div>
@@ -205,12 +182,9 @@
             <div><span>UV</span><strong id="uvText">--</strong></div>
           </div>
         </section>
-
-       
       </aside>
     </div>
   </div>
-
   <script>
     const BUS_CONFIG = [
       { route: '27', company: 'kmb', stop: 'D625B0997C3DBCFE' },
@@ -221,18 +195,15 @@
       { route: '296C', company: 'kmb', stop: 'A1C65E46464147A0' },
       { route: '793', company: 'ctb', stop: '1829' }
     ];
-
     const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
     const pad = n => String(n).padStart(2, '0');
-    const dateText = document.getElementById('dateText');
-    const weekdayText = document.getElementById('weekdayText');
-    const clockText = document.getElementById('clockText');
+    const hkNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
 
     function renderTime() {
-      const d = new Date();
-      dateText.textContent = `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
-      weekdayText.textContent = weekdays[d.getDay()];
-      clockText.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      const d = hkNow();
+      document.getElementById('dateText').textContent = `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
+      document.getElementById('weekdayText').textContent = weekdays[d.getDay()];
+      document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
     function minsUntil(iso) {
@@ -256,86 +227,64 @@
       const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/1`;
       const res = await fetch(url);
       const json = await res.json();
-      const rows = (json.data || [])
+      return (json.data || [])
         .filter(x => x.route === route && x.eta)
         .slice(0, 3)
         .map(x => minsUntil(x.eta))
         .filter(Boolean);
-      return rows;
     }
 
     async function fetchCtbEta(route, stopId) {
       const url = `https://rt.data.gov.hk/v2/transport/citybus-nwfb/eta/CTB/${stopId}/${route}`;
       const res = await fetch(url);
       const json = await res.json();
-      const rows = (json.data || [])
+      return (json.data || [])
         .filter(x => x.route === route && x.eta)
         .slice(0, 3)
         .map(x => minsUntil(x.eta))
         .filter(Boolean);
-      return rows;
     }
 
-
-async function fetchWeather() {
-  try {
-    const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
-    const json = await res.json();
-    const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
-    const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
-    const uv = json.uvindex?.data?.[0];
-
-    document.getElementById('tempText').textContent = temp ? temp.value : '--';
-    document.getElementById('humidityText').textContent = hum ? hum.value : '--';
-    document.getElementById('uvText').textContent = uv ? uv.value : '--';
-    document.getElementById('weatherDesc').textContent = 'Hong Kong Observatory';
-    document.getElementById('weatherIcon').textContent = '☁';
-    document.getElementById('windText').textContent = '--';
-  } catch (e) {
-    document.getElementById('tempText').textContent = '--';
-    document.getElementById('humidityText').textContent = '--';
-    document.getElementById('uvText').textContent = '--';
-    document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
-    document.getElementById('weatherIcon').textContent = '☁';
-    document.getElementById('windText').textContent = '--';
-  }
-}
-
-
-    async function connectCalendar() {
+    async function fetchWeather() {
       try {
-        const res = await fetch('https://script.google.com/macros/s/AKfycbx9kgiHeLwOUCE3btK9WI3hSEPg0nPRL1M9rN9dSHwZ-BCnMo19y2L1G9_72IpnkfWJ/exec');
+        const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en');
         const json = await res.json();
-        const items = (json.events || []).slice(0, 2);
-        document.getElementById('cal1').textContent = items[0] ? items[0].summary : '今日冇 event';
-        document.getElementById('cal2').textContent = items[1] ? items[1].summary : '';
-        document.getElementById('calStatus').textContent = json.updatedAt ? `更新於 ${json.updatedAt}` : '已連接 Google Calendar';
+        const temp = json.temperature?.data?.find(x => x.place === 'Hong Kong Observatory');
+        const hum = json.humidity?.data?.find(x => x.place === 'Hong Kong Observatory');
+        const uv = json.uvindex?.data?.[0];
+        document.getElementById('tempText').textContent = temp ? temp.value : '--';
+        document.getElementById('humidityText').textContent = hum ? hum.value : '--';
+        document.getElementById('uvText').textContent = uv ? uv.value : '--';
+        document.getElementById('weatherDesc').textContent = 'Hong Kong Observatory';
+        document.getElementById('weatherIcon').textContent = '☁';
+        document.getElementById('windText').textContent = '--';
       } catch (e) {
-        document.getElementById('calStatus').textContent = 'Google Calendar 未設定好';
+        document.getElementById('tempText').textContent = '--';
+        document.getElementById('humidityText').textContent = '--';
+        document.getElementById('uvText').textContent = '--';
+        document.getElementById('weatherDesc').textContent = '天氣暫時未能載入';
+        document.getElementById('weatherIcon').textContent = '☁';
+        document.getElementById('windText').textContent = '--';
       }
     }
 
     async function refreshBusEta() {
       for (const item of BUS_CONFIG) {
         try {
-          const rows = item.company === 'kmb'
-            ? await fetchKmbEta(item.route, item.stop)
-            : await fetchCtbEta(item.route, item.stop);
+          const rows = item.company === 'kmb' ? await fetchKmbEta(item.route, item.stop) : await fetchCtbEta(item.route, item.stop);
           setEta(item.route, rows.length ? rows : ['N/A', 'N/A', 'N/A']);
         } catch (err) {
-          setEta(item.route, ['錯誤', '錯誤', '錯誤']);
+          setEta(item.route, ['N/A', 'N/A', 'N/A']);
           console.error(item.route, err);
         }
       }
     }
 
     renderTime();
-    setInterval(renderTime, 1000);
     fetchWeather();
-    connectCalendar();
     refreshBusEta();
+    setInterval(renderTime, 1000);
     setInterval(fetchWeather, 30 * 60 * 1000);
-    setInterval(connectCalendar, 5 * 60 * 1000);
     setInterval(refreshBusEta, 60000);
   </script>
 </body>
